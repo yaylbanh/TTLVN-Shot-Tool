@@ -164,7 +164,7 @@
         <select id="hmode">
           <option value="min">Bằng nhau (co nhỏ)</option>
           <option value="max">Bằng nhau (phóng to)</option>
-          <option value="native">Giữ nguyên cỡ</option>
+          <option value="native" selected>Giữ nguyên cỡ</option>
         </select>
       </label>
       <label class="ctl">Canh
@@ -209,7 +209,7 @@ let order=[];            // ids
 let annos=[];            // {type:'highlight'|'box'|'text', x,y,w,h,color,text,size}
 let undoStack=[];
 let tool='select', color='#f5b301', gap=1, bg='#ffffff', perRow=0, boxW=4;
-let heightMode='min', valign=0.5;
+let heightMode='native', valign=0.5;
 let lay=[], stripW=0, stripH=0, zoom=1;
 let sel=-1;              // selected annotation index
 let drag=null;          // active draw/move
@@ -340,13 +340,12 @@ function drawWatermark(){
   const fs=Math.max(13,Math.round(stripH*0.022));
   const pad=Math.max(10,Math.round(stripH*0.015));
   ctx.save();
-  ctx.globalAlpha=0.35;
   ctx.font=`700 ${fs}px 'Segoe UI',sans-serif`;
   const tw=ctx.measureText(text).width;
   const padX=fs*0.55, padY=fs*0.35;
   const bw=tw+padX*2, bh=fs+padY*2;
   const bx=stripW-pad-bw, by=pad;
-  ctx.fillStyle='rgba(0,0,0,.35)';
+  ctx.fillStyle='rgba(0,0,0,.5)';
   ctx.fillRect(bx,by,bw,bh);
   ctx.fillStyle='#fff';
   ctx.textBaseline='top';ctx.textAlign='left';
