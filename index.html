@@ -158,7 +158,7 @@
       <button class="btn danger" id="delBtn" title="Xoá mục đang chọn (Del)">🗑 Xoá</button>
       <button class="btn danger" id="clearBtn" title="Xoá hết đánh dấu">Xoá hết mark</button>
       <div class="sep"></div>
-      <label class="ctl">Cách <input type="range" id="gap" min="0" max="60" value="14"><span id="gapv">14</span></label>
+      <label class="ctl">Cách <input type="range" id="gap" min="0" max="60" value="1"><span id="gapv">1</span></label>
       <label class="ctl">Ảnh/hàng <input type="number" id="perRow" min="0" value="0" style="width:48px"></label>
       <label class="ctl">Cao
         <select id="hmode">
@@ -208,7 +208,7 @@ let images=[];           // {id,name,img,w,h,url}
 let order=[];            // ids
 let annos=[];            // {type:'highlight'|'box'|'text', x,y,w,h,color,text,size}
 let undoStack=[];
-let tool='select', color='#f5b301', gap=14, bg='#ffffff', perRow=0, boxW=4;
+let tool='select', color='#f5b301', gap=1, bg='#ffffff', perRow=0, boxW=4;
 let heightMode='min', valign=0.5;
 let lay=[], stripW=0, stripH=0, zoom=1;
 let sel=-1;              // selected annotation index
