@@ -330,6 +330,7 @@ function fit(){
 function render(forExport){
   ctx.clearRect(0,0,stripW,stripH);
   ctx.fillStyle=bg; ctx.fillRect(0,0,stripW,stripH);
+  ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
   lay.forEach(p=>ctx.drawImage(p.img,p.x,p.y,p.w,p.h));
   annos.forEach((a,i)=>drawAnno(a,!forExport&&i===sel));
   drawWatermark();
