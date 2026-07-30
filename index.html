@@ -347,7 +347,7 @@ function drawWatermark(){
   const bx=stripW-pad-bw, by=pad;
   ctx.fillStyle='rgba(0,0,0,.5)';
   ctx.fillRect(bx,by,bw,bh);
-  ctx.fillStyle='#fff';
+  ctx.fillStyle='rgba(255,255,255,.5)';
   ctx.textBaseline='top';ctx.textAlign='left';
   ctx.fillText(text,bx+padX,by+padY);
   ctx.restore();
