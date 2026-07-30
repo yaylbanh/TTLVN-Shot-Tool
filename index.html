@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TTLVN Shot Tool</title>
+<style>
+  :root{
+    --bg:#14181d; --panel:#1d232b; --panel2:#222a33; --line:#313a45;
+    --ink:#e7ebf0; --muted:#8b95a3; --accent:#f5b301; --accent2:#ff5d5d;
+    --radius:9px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:13px}
+  body{display:flex;flex-direction:column;overflow:hidden}
+
+  header{display:flex;align-items:center;gap:14px;padding:10px 16px;
+    background:var(--panel);border-bottom:1px solid var(--line)}
+  header .logo{font-weight:700;letter-spacing:.5px;font-size:15px}
+  header .logo b{color:var(--accent)}
+  header .hint{color:var(--muted);font-size:12px}
+  header .spacer{flex:1}
+  header input.fname{background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    padding:7px 10px;border-radius:var(--radius);font-size:12.5px;width:170px}
+  header input.fname::placeholder{color:var(--muted)}
+
+  .btn{appearance:none;border:1px solid var(--line);background:var(--panel2);
+    color:var(--ink);padding:7px 12px;border-radius:var(--radius);cursor:pointer;
+    font-size:12.5px;display:inline-flex;align-items:center;gap:6px;transition:.12s}
+  .btn:hover{border-color:#46525f;background:#2a333d}
+  .btn.primary{background:var(--accent);color:#1a1206;border-color:var(--accent);font-weight:600}
+  .btn.primary:hover{filter:brightness(1.05)}
+  .btn.danger{color:#ffb4b4}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+
+  main{flex:1;display:flex;min-height:0}
+
+  /* left tray */
+  .tray{width:230px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--line);
+    display:flex;flex-direction:column;min-height:0}
+  .tray h3{margin:0;padding:11px 14px;font-size:11px;letter-spacing:.8px;
+    text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+  .thumbs{flex:1;overflow-y:auto;padding:10px;display:grid;
+    grid-template-columns:1fr 1fr;gap:8px;align-content:start}
+  .thumb{position:relative;border:2px solid transparent;border-radius:7px;
+    overflow:hidden;cursor:pointer;background:#0e1115;aspect-ratio:3/4}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb.sel{border-color:var(--accent)}
+  .thumb .num{position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;
+    background:var(--accent);color:#1a1206;font-weight:700;font-size:11px;
+    display:none;align-items:center;justify-content:center}
+  .thumb.sel .num{display:flex}
+  .thumb .nm{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);
+    font-size:9px;padding:2px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tray .empty{color:var(--muted);padding:18px 14px;line-height:1.6;font-size:12px}
+
+  /* center */
+  .center{flex:1;display:flex;flex-direction:column;min-width:0}
+  .toolbar{display:flex;align-items:center;gap:6px;padding:8px 12px;flex-wrap:wrap;
+    background:var(--panel);border-bottom:1px solid var(--line)}
+  .tool{appearance:none;border:1px solid var(--line);background:var(--panel2);color:var(--ink);
+    width:38px;height:34px;border-radius:8px;cursor:pointer;font-size:15px;
+    display:flex;align-items:center;justify-content:center;transition:.12s}
+  .tool:hover{background:#2a333d}
+  .tool.active{background:var(--accent);color:#1a1206;border-color:var(--accent)}
+  .sep{width:1px;height:24px;background:var(--line);margin:0 4px}
+  .swatch{width:24px;height:24px;border-radius:6px;border:2px solid #0006;cursor:pointer;padding:0}
+  .swatch.on{outline:2px solid var(--ink);outline-offset:1px}
+  label.ctl{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:12px}
+  label.ctl input[type=range]{width:80px}
+  label.ctl input[type=color]{width:26px;height:26px;border:none;background:none;padding:0;cursor:pointer}
+  label.ctl select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+    border-radius:6px;padding:4px 6px;font-size:12px;cursor:pointer}
+
+  .stage{flex:1;overflow:auto;position:relative;background:
+    repeating-conic-gradient(#0d1014 0% 25%, #0f1318 0% 50%) 50%/22px 22px;
+    display:flex;padding:22px}
+  .stage canvas{background:#fff;box-shadow:0 8px 30px #0008;border-radius:4px;
+    margin:auto;flex:none}
+  .stage .placeholder{margin:auto;color:var(--muted);text-align:center;line-height:1.8}
+  .stage .placeholder .big{font-size:40px;opacity:.4}
+
+  /* right order panel */
+  .order{width:210px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--line);
+    display:flex;flex-direction:column;min-height:0}
+  .order h3{margin:0;padding:11px 14px;font-size:11px;letter-spacing:.8px;
+    text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+  .olist{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
+  .oitem{display:flex;align-items:center;gap:8px;background:var(--panel2);
+    border:1px solid var(--line);border-radius:8px;padding:6px;cursor:grab}
+  .oitem.drag{opacity:.4}
+  .oitem img{width:34px;height:46px;object-fit:cover;border-radius:4px;flex-shrink:0;background:#000}
+  .oitem .meta{flex:1;min-width:0}
+  .oitem .meta .t{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .oitem .meta .i{font-size:10px;color:var(--muted)}
+  .oitem .mv{display:flex;flex-direction:column}
+  .oitem .mv button,.oitem .rm{background:none;border:none;color:var(--muted);cursor:pointer;
+    font-size:12px;padding:1px 4px;line-height:1}
+  .oitem .mv button:hover,.oitem .rm:hover{color:var(--ink)}
+  .order .empty{color:var(--muted);padding:16px 14px;font-size:12px;line-height:1.6}
+  #textEditor{position:fixed;display:none;border:1px dashed var(--accent);
+    background:#fff;color:#000;font:600 16px sans-serif;padding:2px 4px;outline:none;z-index:99}
+  #dropmask{position:fixed;inset:0;z-index:200;display:none;
+    background:rgba(20,24,29,.82);backdrop-filter:blur(2px);
+    align-items:center;justify-content:center;pointer-events:none}
+  #dropmask .box{border:3px dashed var(--accent);border-radius:18px;
+    padding:46px 70px;text-align:center;color:var(--ink)}
+  #dropmask .box .ic{font-size:54px}
+  #dropmask .box .tx{margin-top:10px;font-size:18px;font-weight:600}
+  #dropmask .box .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .zoombox{display:flex;align-items:center;gap:2px}
+  .zoombox button{width:30px;height:30px}
+  #zoomv{min-width:42px;text-align:center;color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><b>TTLVN</b> Shot Tool</div>
+  <span class="hint">Chọn ảnh → sắp xếp → bôi vàng / khung / chữ → xuất PNG</span>
+  <div class="spacer"></div>
+  <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+  <input type="file" id="folderInput" webkitdirectory style="display:none">
+  <button class="btn" id="pickFiles">+ Chọn ảnh</button>
+  <button class="btn" id="pickFolder">📁 Chọn folder</button>
+  <button class="btn" id="pasteBtn">📋 Dán ảnh</button>
+  <input type="text" class="fname" id="fname" placeholder="Tên file (vd ECHNL-5002)">
+  <button class="btn primary" id="copyBtn" disabled>📋 Copy</button>
+  <button class="btn" id="exportBtn" disabled>⬇ Xuất PNG</button>
+</header>
+
+<main>
+  <aside class="tray">
+    <h3>Thư viện (bấm để chọn ghép)</h3>
+    <div class="thumbs" id="thumbs">
+      <div class="empty">Chưa có ảnh.<br>Bấm <b>Chọn ảnh</b> hoặc <b>Chọn folder</b> để bắt đầu.</div>
+    </div>
+  </aside>
+
+  <section class="center">
+    <div class="toolbar">
+      <button class="tool active" data-tool="select" id="t-select" title="Chọn / di chuyển">⤧</button>
+      <button class="tool" data-tool="highlight" id="t-highlight" title="Bôi vàng (kéo chuột)">🖍</button>
+      <button class="tool" data-tool="box" data-t title="Khoanh khung">▢</button>
+      <button class="tool" data-tool="arrow" title="Mũi tên">→</button>
+      <button class="tool" data-tool="text" title="Thêm chữ">T</button>
+      <div class="sep"></div>
+      <span style="color:var(--muted);font-size:11px">Màu:</span>
+      <button class="swatch on" style="background:#f5b301" data-color="#f5b301"></button>
+      <button class="swatch" style="background:#ff5d5d" data-color="#ff5d5d"></button>
+      <button class="swatch" style="background:#36c2ff" data-color="#36c2ff"></button>
+      <button class="swatch" style="background:#37d67a" data-color="#37d67a"></button>
+      <input type="color" id="customColor" value="#f5b301" title="Màu khác">
+      <label class="ctl" style="margin-left:6px">Viền <input type="range" id="boxw" min="1" max="14" value="4"><span id="boxwv">4</span></label>
+      <div class="sep"></div>
+      <button class="btn" id="undoBtn" title="Hoàn tác (Ctrl+Z)">↶ Hoàn tác</button>
+      <button class="btn" id="dupBtn" title="Nhân bản mục đang chọn (Ctrl+D)">⧉ Nhân bản</button>
+      <button class="btn danger" id="delBtn" title="Xoá mục đang chọn (Del)">🗑 Xoá</button>
+      <button class="btn danger" id="clearBtn" title="Xoá hết đánh dấu">Xoá hết mark</button>
+      <div class="sep"></div>
+      <label class="ctl">Cách <input type="range" id="gap" min="0" max="60" value="14"><span id="gapv">14</span></label>
+      <label class="ctl">Ảnh/hàng <input type="number" id="perRow" min="0" value="0" style="width:48px"></label>
+      <label class="ctl">Cao
+        <select id="hmode">
+          <option value="min">Bằng nhau (co nhỏ)</option>
+          <option value="max">Bằng nhau (phóng to)</option>
+          <option value="native">Giữ nguyên cỡ</option>
+        </select>
+      </label>
+      <label class="ctl">Canh
+        <select id="valign">
+          <option value="0">Trên</option>
+          <option value="0.5" selected>Giữa</option>
+          <option value="1">Dưới</option>
+        </select>
+      </label>
+      <label class="ctl">Nền <input type="color" id="bg" value="#ffffff"></label>
+      <div class="sep"></div>
+      <div class="zoombox">
+        <button class="tool" id="zoomOut" title="Thu nhỏ">−</button>
+        <span id="zoomv">100%</span>
+        <button class="tool" id="zoomIn" title="Phóng to">+</button>
+        <button class="btn" id="zoomFit" title="Vừa màn hình">Fit</button>
+      </div>
+    </div>
+    <div class="stage" id="stage">
+      <div class="placeholder" id="ph"><div class="big">🖼</div>Chọn ít nhất 1 ảnh ở cột trái</div>
+      <canvas id="canvas" style="display:none"></canvas>
+      <input id="textEditor" autocomplete="off">
+    </div>
+  </section>
+
+  <aside class="order">
+    <h3>Thứ tự ghép (kéo / ↑↓)</h3>
+    <div class="olist" id="olist">
+      <div class="empty">Ảnh đã chọn sẽ hiện ở đây theo thứ tự ghép từ trái → phải.</div>
+    </div>
+  </aside>
+</main>
+
+<div id="dropmask"><div class="box"><div class="ic">⬇</div>
+  <div class="tx">Thả ảnh vào đây để nạp</div>
+  <div class="sub">Hỗ trợ nhiều ảnh cùng lúc</div></div></div>
+
+<script>
+const $=s=>document.querySelector(s);
+let images=[];           // {id,name,img,w,h,url}
+let order=[];            // ids
+let annos=[];            // {type:'highlight'|'box'|'text', x,y,w,h,color,text,size}
+let undoStack=[];
+let tool='select', color='#f5b301', gap=14, bg='#ffffff', perRow=0, boxW=4;
+let heightMode='min', valign=0.5;
+let lay=[], stripW=0, stripH=0, zoom=1;
+let sel=-1;              // selected annotation index
+let drag=null;          // active draw/move
+
+const canvas=$('#canvas'), ctx=canvas.getContext('2d');
+const stage=$('#stage'), ph=$('#ph'), tedit=$('#textEditor');
+
+let _id=0;
+function addFiles(files, autoSelect){
+  const list=[...files].filter(f=>f.type.startsWith('image/'))
+    .sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
+  if(!list.length) return;
+  let pending=list.length;
+  const loaded=new Array(list.length);
+  list.forEach((f,idx)=>{
+    const url=URL.createObjectURL(f);
+    const im=new Image();
+    im.onload=()=>{loaded[idx]={id:++_id,name:f.name,img:im,w:im.naturalWidth,h:im.naturalHeight,url};
+      if(--pending===0)finish();};
+    im.onerror=()=>{if(--pending===0)finish();};
+    im.src=url;
+  });
+  function finish(){
+    loaded.filter(Boolean).forEach(e=>{images.push(e);if(autoSelect)order.push(e.id);});
+    renderThumbs();renderOrder();relayout();
+  }
+}
+
+function renderThumbs(){
+  const box=$('#thumbs');
+  if(!images.length){box.innerHTML='<div class="empty">Chưa có ảnh.</div>';return;}
+  box.innerHTML='';
+  images.forEach(im=>{
+    const idx=order.indexOf(im.id);
+    const d=document.createElement('div');
+    d.className='thumb'+(idx>=0?' sel':'');
+    d.innerHTML=`<div class="num">${idx>=0?idx+1:''}</div>
+      <img src="${im.url}"><div class="nm">${im.name}</div>`;
+    d.onclick=()=>{
+      const p=order.indexOf(im.id);
+      if(p>=0) order.splice(p,1); else order.push(im.id);
+      renderThumbs(); renderOrder(); relayout();
+    };
+    box.appendChild(d);
+  });
+}
+
+function renderOrder(){
+  const box=$('#olist');
+  if(!order.length){box.innerHTML='<div class="empty">Ảnh đã chọn sẽ hiện ở đây theo thứ tự ghép từ trái → phải.</div>';return;}
+  box.innerHTML='';
+  order.forEach((id,i)=>{
+    const im=images.find(x=>x.id===id);
+    const row=document.createElement('div');
+    row.className='oitem'; row.draggable=true; row.dataset.i=i;
+    row.innerHTML=`<img src="${im.url}">
+      <div class="meta"><div class="t">${i+1}. ${im.name}</div><div class="i">${im.w}×${im.h}</div></div>
+      <div class="mv"><button data-up>▲</button><button data-down>▼</button></div>
+      <button class="rm" title="Bỏ">✕</button>`;
+    row.querySelector('[data-up]').onclick=e=>{e.stopPropagation();move(i,-1)};
+    row.querySelector('[data-down]').onclick=e=>{e.stopPropagation();move(i,1)};
+    row.querySelector('.rm').onclick=e=>{e.stopPropagation();order.splice(i,1);renderThumbs();renderOrder();relayout()};
+    row.addEventListener('dragstart',e=>{row.classList.add('drag');e.dataTransfer.setData('i',i)});
+    row.addEventListener('dragend',()=>row.classList.remove('drag'));
+    row.addEventListener('dragover',e=>e.preventDefault());
+    row.addEventListener('drop',e=>{e.preventDefault();
+      const from=+e.dataTransfer.getData('i'),to=i;
+      if(from===to)return; const [m]=order.splice(from,1); order.splice(to,0,m);
+      renderThumbs();renderOrder();relayout();});
+    box.appendChild(row);
+  });
+}
+function move(i,d){const j=i+d;if(j<0||j>=order.length)return;
+  [order[i],order[j]]=[order[j],order[i]];renderThumbs();renderOrder();relayout();}
+
+function relayout(){
+  const sel=order.map(id=>images.find(x=>x.id===id)).filter(Boolean);
+  if(!sel.length){canvas.style.display='none';ph.style.display='block';$('#exportBtn').disabled=true;$('#copyBtn').disabled=true;return;}
+  ph.style.display='none';canvas.style.display='block';$('#exportBtn').disabled=false;$('#copyBtn').disabled=false;
+  const heights=sel.map(s=>s.h);
+  const per=perRow>0?perRow:sel.length;
+  lay=[]; let y=gap, maxX=0;
+  for(let i=0;i<sel.length;i+=per){
+    const rowItems=sel.slice(i,i+per);
+    let scaled, rowH;
+    if(heightMode==='native'){
+      scaled=rowItems.map(s=>({img:s.img,w:s.w,h:s.h}));
+      rowH=Math.max(...scaled.map(o=>o.h));
+    }else{
+      const tH=heightMode==='max'?Math.max(...heights):Math.min(...heights);
+      scaled=rowItems.map(s=>{const sc=tH/s.h;return {img:s.img,w:Math.round(s.w*sc),h:tH};});
+      rowH=tH;
+    }
+    let x=gap;
+    scaled.forEach(o=>{const oy=y+Math.round((rowH-o.h)*valign);
+      lay.push({img:o.img,x,y:oy,w:o.w,h:o.h});x+=o.w+gap;});
+    maxX=Math.max(maxX,x); y+=rowH+gap;
+  }
+  stripW=maxX; stripH=y;
+  canvas.width=stripW; canvas.height=stripH;
+  fit();
+  render();
+}
+
+function applyZoom(z){
+  zoom=Math.max(0.05,Math.min(5,z));
+  canvas.style.width=(stripW*zoom)+'px';
+  canvas.style.height=(stripH*zoom)+'px';
+  $('#zoomv').textContent=Math.round(zoom*100)+'%';
+}
+function fit(){
+  const pad=44;
+  const aw=stage.clientWidth-pad, ah=stage.clientHeight-pad;
+  if(stripW<=0)return;
+  applyZoom(Math.min(aw/stripW, ah/stripH, 1));
+}
+
+function render(forExport){
+  ctx.clearRect(0,0,stripW,stripH);
+  ctx.fillStyle=bg; ctx.fillRect(0,0,stripW,stripH);
+  lay.forEach(p=>ctx.drawImage(p.img,p.x,p.y,p.w,p.h));
+  annos.forEach((a,i)=>drawAnno(a,!forExport&&i===sel));
+  drawWatermark();
+}
+function drawWatermark(){
+  const text='Product TTLVN';
+  const fs=Math.max(13,Math.round(stripH*0.022));
+  const pad=Math.max(10,Math.round(stripH*0.015));
+  ctx.save();
+  ctx.globalAlpha=0.35;
+  ctx.font=`700 ${fs}px 'Segoe UI',sans-serif`;
+  const tw=ctx.measureText(text).width;
+  const padX=fs*0.55, padY=fs*0.35;
+  const bw=tw+padX*2, bh=fs+padY*2;
+  const bx=stripW-pad-bw, by=pad;
+  ctx.fillStyle='rgba(0,0,0,.35)';
+  ctx.fillRect(bx,by,bw,bh);
+  ctx.fillStyle='#fff';
+  ctx.textBaseline='top';ctx.textAlign='left';
+  ctx.fillText(text,bx+padX,by+padY);
+  ctx.restore();
+}
+function drawAnno(a,active){
+  ctx.save();
+  const refDim=Math.max(stripW,stripH);
+  if(a.type==='highlight'){ctx.globalAlpha=.42;ctx.fillStyle=a.color;
+    ctx.fillRect(a.x,a.y,a.w,a.h);}
+  else if(a.type==='box'){ctx.strokeStyle=a.color;ctx.lineWidth=Math.max(1,(a.bw||4)/1000*refDim);
+    ctx.strokeRect(a.x,a.y,a.w,a.h);}
+  else if(a.type==='arrow'){const x1=a.x,y1=a.y,x2=a.x+a.w,y2=a.y+a.h;
+    const len=Math.hypot(a.w,a.h)||1;const ang=Math.atan2(a.h,a.w);
+    const ux=Math.cos(ang),uy=Math.sin(ang),px=-uy,py=ux;
+    const lw=Math.max(1,(a.bw||4)/1000*refDim);
+    ctx.fillStyle=a.color;
+    const headLen=Math.min(Math.max(lw*6,refDim*0.035),len*0.4);
+    const neckLen=Math.max(0,len-headLen);
+    const nx=x1+ux*neckLen, ny=y1+uy*neckLen; // điểm nối thân -> đầu mũi tên
+    const hw=headLen*0.42; // nửa bề rộng đầu mũi tên
+    // thân: thon thẳng, đít nhỏ phình dần tới gần đầu (không cong -> không bao giờ tự cắt)
+    const tailW=lw*0.25, neckW=Math.min(lw*1.2,hw*1.6);
+    const steps=6, top=[], bot=[];
+    for(let i=0;i<=steps;i++){
+      const t=i/steps, d=t*neckLen, w=(tailW+(neckW-tailW)*Math.pow(t,1.5))/2;
+      const cx=x1+ux*d, cy=y1+uy*d;
+      top.push({x:cx+px*w,y:cy+py*w}); bot.push({x:cx-px*w,y:cy-py*w});
+    }
+    ctx.beginPath();ctx.moveTo(top[0].x,top[0].y);
+    for(let i=1;i<top.length;i++)ctx.lineTo(top[i].x,top[i].y);
+    for(let i=bot.length-1;i>=0;i--)ctx.lineTo(bot[i].x,bot[i].y);
+    ctx.closePath();ctx.fill();
+    // đầu: mũi tên phẳng có khấc lõm phía sau (dáng cờ đuôi nheo), toàn đường thẳng nên luôn gọn
+    const notch=headLen*0.3;
+    ctx.beginPath();
+    ctx.moveTo(nx+px*hw,ny+py*hw);
+    ctx.lineTo(x2,y2);
+    ctx.lineTo(nx-px*hw,ny-py*hw);
+    ctx.lineTo(nx+ux*notch,ny+uy*notch);
+    ctx.closePath();ctx.fill();}
+  else if(a.type==='text'){ctx.fillStyle=a.color;ctx.font=`600 ${a.size}px sans-serif`;
+    ctx.textBaseline='top';ctx.fillText(a.text,a.x,a.y);}
+  ctx.restore();
+  if(active){const b=bounds(a);ctx.save();ctx.strokeStyle='#1b9dff';
+    ctx.setLineDash([5,4]);ctx.lineWidth=2;ctx.strokeRect(b.x-3,b.y-3,b.w+6,b.h+6);
+    ctx.setLineDash([]);const h=handle(a);ctx.fillStyle='#1b9dff';
+    ctx.fillRect(h.x-h.s/2,h.y-h.s/2,h.s,h.s);ctx.restore();}
+}
+function handle(a){const s=Math.max(11,stripH*0.012);
+  if(a.type==='arrow')return {x:a.x+a.w,y:a.y+a.h,s};
+  const b=bounds(a);return {x:b.x+b.w+3,y:b.y+b.h+3,s};}
+function onHandle(p,a){const h=handle(a);const t=h.s;
+  return Math.abs(p.x-h.x)<=t&&Math.abs(p.y-h.y)<=t;}
+function bounds(a){
+  if(a.type==='text'){ctx.font=`600 ${a.size}px sans-serif`;
+    return {x:a.x,y:a.y,w:ctx.measureText(a.text).width,h:a.size*1.2};}
+  return {x:Math.min(a.x,a.x+a.w),y:Math.min(a.y,a.y+a.h),w:Math.abs(a.w),h:Math.abs(a.h)};
+}
+
+// ---- coords ----
+function pt(e){const r=canvas.getBoundingClientRect();
+  return {x:(e.clientX-r.left)*(canvas.width/r.width),y:(e.clientY-r.top)*(canvas.height/r.height)};}
+function hit(p){for(let i=annos.length-1;i>=0;i--){const b=bounds(annos[i]);
+  if(p.x>=b.x-3&&p.x<=b.x+b.w+3&&p.y>=b.y-3&&p.y<=b.y+b.h+3)return i;}return -1;}
+function pushUndo(){undoStack.push(JSON.stringify(annos));if(undoStack.length>50)undoStack.shift();}
+
+canvas.addEventListener('pointerdown',e=>{
+  if(canvas.style.display==='none')return;
+  const p=pt(e);
+  if(tool==='select'){
+    if(sel>=0&&onHandle(p,annos[sel])){pushUndo();drag={mode:'resize',a:annos[sel],dirty:false};return;}
+    const h=hit(p); sel=h; render();
+    if(h>=0){const a=annos[h];pushUndo();
+      drag={mode:'move',ox:p.x-a.x,oy:p.y-a.y,dirty:false};}
+    return;
+  }
+  if(tool==='text'){placeText(p,e);return;}
+  pushUndo();
+  const a={type:tool,x:p.x,y:p.y,w:0,h:0,color};
+  if(tool==='box'||tool==='arrow')a.bw=boxW;
+  annos.push(a); sel=annos.length-1; drag={mode:'draw',a,dirty:true};
+});
+canvas.addEventListener('pointermove',e=>{
+  if(!drag)return; const p=pt(e); drag.dirty=true;
+  if(drag.mode==='draw'){drag.a.w=p.x-drag.a.x;drag.a.h=p.y-drag.a.y;}
+  else if(drag.mode==='move'&&sel>=0){annos[sel].x=p.x-drag.ox;annos[sel].y=p.y-drag.oy;}
+  else if(drag.mode==='resize'){const a=drag.a;
+    if(a.type==='text'){a.size=Math.max(8,Math.round((p.y-a.y)/1.2));}
+    else{a.w=p.x-a.x;a.h=p.y-a.y;}}
+  render();
+});
+canvas.addEventListener('pointerup',()=>{
+  if(drag){
+    const a=drag.a;
+    if((drag.mode==='draw'||drag.mode==='resize')&&a&&(a.type==='box'||a.type==='highlight')){
+      if(a.w<0){a.x+=a.w;a.w=-a.w;} if(a.h<0){a.y+=a.h;a.h=-a.h;}
+    }
+    if(drag.mode==='draw'&&Math.abs(a.w)<6&&Math.abs(a.h)<6){annos.pop();undoStack.pop();sel=-1;}
+    else if(!drag.dirty){undoStack.pop();}
+    render();
+  }
+  drag=null;
+});
+
+function placeText(p,e){
+  const size=Math.round(stripH*0.016);
+  let done=false;
+  tedit.style.display='block';
+  tedit.style.left=e.clientX+'px';
+  tedit.style.top=e.clientY+'px';
+  tedit.style.color=color;
+  tedit.style.fontSize=Math.max(13,size*zoom)+'px';
+  tedit.value='';
+  setTimeout(()=>tedit.focus(),0);
+  const commit=()=>{
+    if(done)return; done=true;
+    tedit.style.display='none'; tedit.onblur=null; tedit.onkeydown=null;
+    const v=tedit.value.trim();
+    if(v){pushUndo();annos.push({type:'text',x:p.x,y:p.y,color,text:v,size});sel=annos.length-1;}
+    render();
+  };
+  const cancel=()=>{if(done)return;done=true;tedit.style.display='none';tedit.onblur=null;tedit.onkeydown=null;};
+  tedit.onkeydown=ev=>{
+    ev.stopPropagation();
+    if(ev.key==='Enter'){ev.preventDefault();commit();}
+    else if(ev.key==='Escape'){ev.preventDefault();cancel();}
+  };
+  tedit.onblur=commit;
+}
+
+// ---- tools UI ----
+document.querySelectorAll('.tool').forEach(b=>b.onclick=()=>{
+  tool=b.dataset.tool;
+  document.querySelectorAll('.tool').forEach(x=>x.classList.toggle('active',x===b));
+  if(tool!=='select')sel=-1,render&&lay.length&&render();
+});
+document.querySelectorAll('.swatch').forEach(s=>s.onclick=()=>{
+  color=s.dataset.color;$('#customColor').value=color;
+  document.querySelectorAll('.swatch').forEach(x=>x.classList.toggle('on',x===s));
+  if(sel>=0){annos[sel].color=color;render();}
+});
+$('#customColor').oninput=e=>{color=e.target.value;
+  document.querySelectorAll('.swatch').forEach(x=>x.classList.remove('on'));
+  if(sel>=0){annos[sel].color=color;render();}};
+$('#gap').oninput=e=>{gap=+e.target.value;$('#gapv').textContent=gap;relayout();};
+$('#perRow').oninput=e=>{perRow=Math.max(0,+e.target.value||0);relayout();};
+$('#hmode').onchange=e=>{heightMode=e.target.value;relayout();};
+$('#valign').onchange=e=>{valign=+e.target.value;relayout();};
+$('#boxw').addEventListener('mousedown',()=>{if(sel>=0&&(annos[sel].type==='box'||annos[sel].type==='arrow'))pushUndo();});
+$('#boxw').oninput=e=>{boxW=+e.target.value;$('#boxwv').textContent=boxW;
+  if(sel>=0&&(annos[sel].type==='box'||annos[sel].type==='arrow')){annos[sel].bw=boxW;render();}};
+$('#bg').oninput=e=>{bg=e.target.value;render();};
+
+$('#undoBtn').onclick=undo;
+function undo(){if(!undoStack.length)return;annos=JSON.parse(undoStack.pop());sel=-1;render();}
+function dup(){if(sel<0)return;pushUndo();
+  const off=Math.max(14,stripH*0.02);
+  const c=JSON.parse(JSON.stringify(annos[sel]));c.x+=off;c.y+=off;
+  annos.push(c);sel=annos.length-1;
+  tool='select';document.querySelectorAll('.tool').forEach(x=>x.classList.toggle('active',x.dataset.tool==='select'));
+  render();}
+$('#dupBtn').onclick=dup;
+$('#delBtn').onclick=()=>{if(sel>=0){pushUndo();annos.splice(sel,1);sel=-1;render();}};
+$('#clearBtn').onclick=()=>{if(annos.length){pushUndo();annos=[];sel=-1;render();}};
+document.addEventListener('keydown',e=>{
+  if(tedit.style.display==='block')return;
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}
+  if((e.ctrlKey||e.metaKey)&&(e.key==='d'||e.key==='D')){e.preventDefault();dup();}
+  if((e.key==='Delete'||e.key==='Backspace')&&sel>=0){pushUndo();annos.splice(sel,1);sel=-1;render();}
+});
+
+$('#pickFiles').onclick=()=>$('#fileInput').click();
+$('#pickFolder').onclick=()=>$('#folderInput').click();
+$('#fileInput').onchange=e=>addFiles(e.target.files,true);
+$('#folderInput').onchange=e=>addFiles(e.target.files,false);
+
+// zoom
+$('#zoomIn').onclick=()=>applyZoom(zoom*1.2);
+$('#zoomOut').onclick=()=>applyZoom(zoom/1.2);
+$('#zoomFit').onclick=fit;
+stage.addEventListener('wheel',e=>{
+  if(e.ctrlKey){e.preventDefault();applyZoom(zoom*(e.deltaY<0?1.1:0.9));}
+},{passive:false});
+window.addEventListener('resize',()=>{if(stripW>0)fit();});
+
+// paste from clipboard
+// read clipboard images, retrying until a NEW image appears (handles capture latency)
+let lastSig=null;
+async function readClip(){const items=await navigator.clipboard.read();const out=[];let sig=null;
+  for(const it of items){const type=it.types.find(t=>t.startsWith('image/'));
+    if(type){const blob=await it.getType(type);sig=(sig||0)+blob.size;
+      out.push(new File([blob],'clipboard_'+(out.length+1)+'.png',{type}));}}
+  return {files:out,sig};}
+async function grabClipboard(wantNew){
+  for(let i=0;i<8;i++){
+    try{const {files,sig}=await readClip();
+      if(files.length&&(!wantNew||sig!==lastSig)){lastSig=sig;return files;}}
+    catch(e){if(i===0)throw e;}
+    await new Promise(r=>setTimeout(r,150));
+  }
+  try{const {files,sig}=await readClip();if(files.length){lastSig=sig;return files;}}catch(e){}
+  return [];
+}
+
+$('#pasteBtn').onclick=async()=>{
+  const b=$('#pasteBtn');const old=b.textContent;b.textContent='⏳ Đang lấy ảnh...';
+  try{
+    const files=await grabClipboard(true);
+    if(files.length)addFiles(files,true);
+    else alert('Clipboard không có ảnh. Chụp/copy ảnh xong rồi bấm Dán (hoặc Ctrl+V).');
+  }catch(err){alert('Trình duyệt chặn đọc clipboard. Click vào trang rồi nhấn Ctrl+V để dán ảnh.');}
+  b.textContent=old;
+};
+window.addEventListener('paste',async e=>{
+  const tag=document.activeElement?.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA')return;
+  // try the synchronous snapshot first
+  const sync=[...(e.clipboardData?.items||[])]
+    .filter(i=>i.type.startsWith('image/')).map(i=>i.getAsFile()).filter(Boolean);
+  e.preventDefault();
+  if(sync.length){lastSig=sync.reduce((s,f)=>s+f.size,0);addFiles(sync,true);return;}
+  // empty (capture not ready yet) → wait & retry via async clipboard
+  try{const files=await grabClipboard(false);if(files.length)addFiles(files,true);}catch(_){}
+});
+
+// drag & drop anywhere
+const dropmask=$('#dropmask'); let dragDepth=0;
+window.addEventListener('dragenter',e=>{
+  if(![...e.dataTransfer.types].includes('Files'))return;
+  e.preventDefault();dragDepth++;dropmask.style.display='flex';
+});
+window.addEventListener('dragover',e=>{
+  if([...e.dataTransfer.types].includes('Files'))e.preventDefault();
+});
+window.addEventListener('dragleave',e=>{
+  if(--dragDepth<=0){dragDepth=0;dropmask.style.display='none';}
+});
+window.addEventListener('drop',e=>{
+  e.preventDefault();dragDepth=0;dropmask.style.display='none';
+  const files=[...(e.dataTransfer.files||[])].filter(f=>f.type.startsWith('image/'));
+  if(files.length)addFiles(files,true);
+});
+
+$('#copyBtn').onclick=()=>{
+  const keep=sel;sel=-1;render(true);
+  canvas.toBlob(async blob=>{
+    try{
+      await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+      const b=$('#copyBtn');const old=b.textContent;
+      b.textContent='✓ Đã copy';setTimeout(()=>b.textContent=old,1400);
+    }catch(err){
+      alert('Không copy được vào clipboard. Hãy dùng nút "Xuất PNG" để lưu file rồi đính kèm.');
+    }
+    sel=keep;render();
+  },'image/png');
+};
+
+$('#exportBtn').onclick=()=>{
+  const keep=sel;sel=-1;render(true);
+  const base=$('#fname').value.trim()||'ghep';
+  canvas.toBlob(blob=>{
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=base+'.png';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+    sel=keep;render();
+  },'image/png');
+};
+</script>
+</body>
+</html>
