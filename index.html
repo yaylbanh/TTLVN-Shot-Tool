@@ -337,8 +337,8 @@ function render(forExport){
 }
 function drawWatermark(){
   const text='Product TTLVN';
-  const fs=Math.max(13,Math.round(stripH*0.022));
-  const pad=Math.max(10,Math.round(stripH*0.015));
+  const fs=Math.max(13,Math.min(26,Math.round(stripH*0.022)));
+  const pad=Math.max(10,Math.min(18,Math.round(stripH*0.015)));
   ctx.save();
   ctx.font=`700 ${fs}px 'Segoe UI',sans-serif`;
   const tw=ctx.measureText(text).width;
